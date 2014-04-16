@@ -108,7 +108,7 @@ Builder.load_string('''<IdCards>:
         orientation: 'vertical'
         Label:
             id: namelabel
-            text: root.find_random_name("data\male_names.txt")
+            text: root.find_random_name("male_names.txt") + " " + root.find_random_name("last_names.txt")
 ''')
 
 
@@ -117,8 +117,10 @@ class IdCards(Scatter):
     
     def find_random_name(self, file_text):
         #function to pick a random line in a text file and return a name on that line
-        with open(file_text, 'r+') as f:
-            f_size = os.stat(file_text)[6] #get file size
+        name_file = os.path.join(os.path.curdir, 'data', file_text)
+        with open(name_file, 'r+') as f:
+          
+            f_size = os.stat(name_file)[6] #get file size
             
             #change current pointer pos + random size
             f.seek((f.tell() + random.randint(0, f_size-1))%f_size)
@@ -129,5 +131,6 @@ class IdCards(Scatter):
             return name
     
     def new_name(self):
-        self.name_text.text = self.find_random_name("data\male_names.txt")
+        self.name_text.text = ' '.join([self.find_random_name("male_names.txt"),
+                                    self.find_random_name("last_names.txt")])
         
