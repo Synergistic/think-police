@@ -2,12 +2,12 @@ __author__ = 'Synergy'
 
 from kivy.app import App
 from kivy.uix.screenmanager import ScreenManager
-from menus import Main, Settings, Pause
-from think import ThinkDesk
+from menus import Main
+from think import ThinkDesk, Status
 
 SCREENS = {'main': Main(),
-           'settings': Settings(),
-           'desk': ThinkDesk()}
+           'desk': ThinkDesk(),
+           'status': Status()}
 
 class ThinkApp(App):
     playing = False
@@ -19,7 +19,6 @@ class ThinkApp(App):
             self.sm.add_widget(SCREENS[scn_name])
         self.sm.current = 'main'   
         return self.sm
-        
 
 if __name__ == '__main__':
     ThinkApp().run()
