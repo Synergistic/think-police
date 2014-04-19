@@ -43,6 +43,7 @@ class Person:
 Builder.load_string('''<ThinkDesk>:
     name: 'desk'
     rb: rule_book
+    arr_warrant: arrest_warrant
     BoxLayout:
         size_hint: (1, 0.8)
         pos_hint: {'center_y': 0.6}
@@ -63,7 +64,7 @@ Builder.load_string('''<ThinkDesk>:
                     text: 'Imprison'
                 Button:
                     text: 'New Perp'
-                    on_press: arrest_warrant.new_person()
+                    on_press: root.change_perp()
                 Button:
                     text: 'Quit'
                     on_press: root.manager.current = 'main'
@@ -72,29 +73,46 @@ Builder.load_string('''<ThinkDesk>:
 
 class ThinkDesk(Screen):
     rb = ObjectProperty()
-    playing = False	
+    arr_warrant = ObjectProperty()
+    perps = []
+    playing = False
+    day = 1
     
+    def on_enter(self):
+        self.start_day()
+        
     def start_day(self):
-        if not self.playing:
-            self.rb.add_rules(self.manager.parent.current_day)
-            self.playing = True
+        if not self.playing and self.day < 6:
+            self.rb.add_rules(self.day)
+            self.playing = True   
+            for i in range(random.randrange(4, 7)):
+                p = Person()
+                self.perps.append(p)
+            self.change_perp()
+    
+    def change_perp(self):
+        if len(self.perps) > 0:
+            self.arr_warrant.new_person(self.perps.pop())
         else:
-            self.rb.rule_list.clear_widgets()
-            self.playing = False
+            self.next_phase()
     
     def next_phase(self):
         change_to_transition(self.manager, text='End of Work')
-        if self.manager.parent.current_day < 5:
-            self.manager.parent.current_day += 1
+        self.playing = False
+        if self.day < 5:
+            self.day += 1
     
     
         
 Builder.load_string('''<Rules>:
-
+    rule_list: rules
     pos: 400, 200
     do_default_tab: False
     TabbedPanelItem:
         text: 'Basic'
+        BoxLayout:
+            orientation: 'vertical'
+            id: rules
 
 ''')
 
@@ -102,6 +120,7 @@ class Rules(TabbedPanel):
     rule_list = ObjectProperty()
     
     def add_rules(self, day):
+        self.rule_list.clear_widgets()
         for i in range(day):
             rule_text = str(i+1) + '. ' + c.RULES[i]
             self.rule_list.add_widget(Label(text=rule_text, font_size=(str(self.parent.height/50)+'sp')))
@@ -130,8 +149,7 @@ class Warrant(BoxLayout):
         self.crime_text = first.crime
         self.offenses_text = first.offenses
     
-    def new_person(self):
-        new = Person()
+    def new_person(self, new):
         self.name_text = new.name
         self.crime_text = new.crime
         self.offenses_text = new.offenses        
@@ -143,7 +161,6 @@ Builder.load_string('''<Status>:
     BoxLayout:
         orientation: 'vertical'
         Label:
-<<<<<<< HEAD
             text: 'Status'        
         BoxLayout:
             orientation: 'horizontal'
@@ -181,41 +198,12 @@ Builder.load_string('''<Status>:
             Button:
                 text: 'dongs'
 ''')        
-=======
-            id: namelabel
-            text: root.find_random_name("male_names.txt") + " " + root.find_random_name("last_names.txt")
-''')
->>>>>>> b3cb2f829f2a9b414c45f93fd668ef4448c7f72e
 
 class Status(Screen):
     def get_day(self):
-        d = 'Day '+str(self.manager.parent.current_day)
+        d = 'Day '+str(self.manager.get_screen('desk').day)
         return d
 
-<<<<<<< HEAD
     def move_on(self):
         change_to_transition(self.manager, text=self.get_day())
-=======
-class IdCards(Scatter):
-    name_text = ObjectProperty()
-    
-    def find_random_name(self, file_text):
-        #function to pick a random line in a text file and return a name on that line
-        name_file = os.path.join(os.path.curdir, 'data', file_text)
-        with open(name_file, 'r+') as f:
-          
-            f_size = os.stat(name_file)[6] #get file size
-            
-            #change current pointer pos + random size
-            f.seek((f.tell() + random.randint(0, f_size-1))%f_size)
-            f.readline() #skip a line in case we're in the middle
-            
-            #split the next line at 1st blank, take the first partition and capitalize it
-            name = f.readline().partition(' ')[0].capitalize()
-            return name
-    
-    def new_name(self):
-        self.name_text.text = ' '.join([self.find_random_name("male_names.txt"),
-                                    self.find_random_name("last_names.txt")])
-        
->>>>>>> b3cb2f829f2a9b414c45f93fd668ef4448c7f72e
+

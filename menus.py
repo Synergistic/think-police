@@ -24,6 +24,4 @@ class Main(Screen):
     
     def new_game(self):
         change_to_transition(self.manager, text='Day 1')
-        self.manager.parent.playing = True
-        self.manager.parent.current_day = 1
         

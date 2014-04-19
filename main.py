@@ -10,8 +10,8 @@ SCREENS = {'main': Main(),
            'status': Status()}
 
 class ThinkApp(App):
-    playing = False
     current_day = 0
+
     
     def build(self, **kwargs):
         self.sm = ScreenManager()
