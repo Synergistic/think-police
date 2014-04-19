@@ -143,6 +143,7 @@ Builder.load_string('''<Status>:
     BoxLayout:
         orientation: 'vertical'
         Label:
+<<<<<<< HEAD
             text: 'Status'        
         BoxLayout:
             orientation: 'horizontal'
@@ -180,11 +181,41 @@ Builder.load_string('''<Status>:
             Button:
                 text: 'dongs'
 ''')        
+=======
+            id: namelabel
+            text: root.find_random_name("male_names.txt") + " " + root.find_random_name("last_names.txt")
+''')
+>>>>>>> b3cb2f829f2a9b414c45f93fd668ef4448c7f72e
 
 class Status(Screen):
     def get_day(self):
         d = 'Day '+str(self.manager.parent.current_day)
         return d
 
+<<<<<<< HEAD
     def move_on(self):
         change_to_transition(self.manager, text=self.get_day())
+=======
+class IdCards(Scatter):
+    name_text = ObjectProperty()
+    
+    def find_random_name(self, file_text):
+        #function to pick a random line in a text file and return a name on that line
+        name_file = os.path.join(os.path.curdir, 'data', file_text)
+        with open(name_file, 'r+') as f:
+          
+            f_size = os.stat(name_file)[6] #get file size
+            
+            #change current pointer pos + random size
+            f.seek((f.tell() + random.randint(0, f_size-1))%f_size)
+            f.readline() #skip a line in case we're in the middle
+            
+            #split the next line at 1st blank, take the first partition and capitalize it
+            name = f.readline().partition(' ')[0].capitalize()
+            return name
+    
+    def new_name(self):
+        self.name_text.text = ' '.join([self.find_random_name("male_names.txt"),
+                                    self.find_random_name("last_names.txt")])
+        
+>>>>>>> b3cb2f829f2a9b414c45f93fd668ef4448c7f72e
