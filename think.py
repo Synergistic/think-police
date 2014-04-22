@@ -3,8 +3,9 @@ __author__ = 'Synergy'
 from kivy.lang import Builder
 from kivy.uix.screenmanager import Screen
 from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.tabbedpanel import TabbedPanel
+from kivy.uix.accordion import Accordion, AccordionItem
 from kivy.properties import ObjectProperty, StringProperty
+from kivy.uix.tabbedpanel import TabbedPanel, TabbedPanelItem
 from kivy.uix.label import Label
 from transition import change_to_transition
 import os, random
@@ -35,7 +36,7 @@ class Person:
         return random.choice(c.CRIMES.keys())
 
     def find_weighted_random(self):
-        choices = [('First', 2), ('Second', 3), ('Third', 1)]
+        choices = [('First', 2), ('Second', 1)]
         population = [val for val, cnt in choices for i in range(cnt)]
         return random.choice(population)
 
@@ -57,14 +58,14 @@ Builder.load_string('''<ThinkDesk>:
             orientation: 'vertical'
             BoxLayout: 
                 Button: 
-                    text: 'Erase'
+                    text: 'Vaporize'
+                    on_press: root.erase()
                 Button:
                     text: 'Reeducate'
+                    on_press: root.reeducate()
                 Button:
                     text: 'Imprison'
-                Button:
-                    text: 'New Perp'
-                    on_press: root.change_perp()
+                    on_press: root.imprison()
                 Button:
                     text: 'Quit'
                     on_press: root.manager.current = 'main'
@@ -84,12 +85,22 @@ class ThinkDesk(Screen):
     def start_day(self):
         if not self.playing and self.day < 6:
             self.rb.add_rules(self.day)
+            self.rb.add_pages()
             self.playing = True   
             for i in range(random.randrange(4, 7)):
                 p = Person()
                 self.perps.append(p)
             self.change_perp()
     
+    def reeducate(self):
+        self.change_perp()
+    
+    def imprison(self):
+        self.change_perp()
+    
+    def erase(self):
+        self.change_perp()
+        
     def change_perp(self):
         if len(self.perps) > 0:
             self.arr_warrant.new_person(self.perps.pop())
@@ -102,28 +113,49 @@ class ThinkDesk(Screen):
         if self.day < 5:
             self.day += 1
     
-    
         
 Builder.load_string('''<Rules>:
+    start_tab: basic
     rule_list: rules
-    pos: 400, 200
+    orientation: 'vertical'
     do_default_tab: False
+    tab_pos: 'top_left'
+    tab_width: 110
     TabbedPanelItem:
-        text: 'Basic'
+        id: basic
+        text: 'Basic Truths'
         BoxLayout:
             orientation: 'vertical'
             id: rules
-
 ''')
-
+class Page(TabbedPanelItem):
+    
+    def __init__(self, crime, **kwargs):
+        super(Page, self).__init__(**kwargs)
+        self.text = crime       
+        self.add_widget(self.crime_page(c.CRIMES[crime]))
+            
+    def crime_page(self, c):
+        b = BoxLayout(orientation='vertical')
+        b.add_widget(Label(text=c[0]))
+        b.add_widget(Label(text=c[1]))
+        b.add_widget(Label(text=c[2]))
+        return b
+    
 class Rules(TabbedPanel):
     rule_list = ObjectProperty()
+    crime_tab = c.CRIMES.keys()
     
+    def add_pages(self):
+        self.clear_widgets()
+        for c in self.crime_tab:
+            self.add_widget(Page(c))
+            
     def add_rules(self, day):
         self.rule_list.clear_widgets()
         for i in range(day):
             rule_text = str(i+1) + '. ' + c.RULES[i]
-            self.rule_list.add_widget(Label(text=rule_text, font_size=(str(self.parent.height/50)+'sp')))
+            self.rule_list.add_widget(Label(text=rule_text))
         
 
 Builder.load_string('''<Warrant>:
