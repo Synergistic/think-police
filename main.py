@@ -11,7 +11,6 @@ SCREENS = {'main': Main(),
 
 class ThinkApp(App):
     current_day = 0
-
     
     def build(self, **kwargs):
         self.sm = ScreenManager()
