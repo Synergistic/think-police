@@ -1,11 +1,13 @@
 __author__ = 'Synergy'
 
-RULES = ['Inner Members are not to be killed nor reeducated.',
-         'Prominent members are not to be reeducated.',
-         'Parole are not to be killed.',
-         'Repeat offenders should be reeducated at a minimum',
-         'I need to make up a fifth rule']
+#Rules to be evaluated on each choice. One is added each game day.
+RULES = ['Reeducation is not to be wasted on proletariat',
+         'Outer Party members > 42 years of age are to be vaporized.',
+         'Inner Party members < 40 years of age are to be reeducated.',
+         'Prominent members are never to be imprisoned.',
+         'Do not use the same punish more than twice in a row.']
 
+#Various crimes, & suggested punishments [Definition, 1st offense, 2nd]
 CRIMES = {'Treason': ['The crime of betraying The Party',
                       'Reeducation', 
                       'Death'],

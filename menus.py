@@ -23,5 +23,6 @@ Builder.load_string('''<Main>:
 class Main(Screen):
     
     def new_game(self):
+        #Fade to a transition screen
         change_to_transition(self.manager, text='Day 1')
         

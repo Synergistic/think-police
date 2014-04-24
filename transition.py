@@ -14,6 +14,10 @@ class DayChange(Screen):
     my_text = StringProperty('Day 1')
 
 def change_to_transition(sm, text='Day 1', n='newday', type=DayChange, trans=WipeTransition()):
+    '''Takes a screenmananager, text to display, the transition screen name, the actual
+    transition screen, and the transition type. Makes the switch and then schedules the
+    next transition to the next phase of the game.'''
+    
     start_screen = sm.current 
     if sm.has_screen(n):
         sm.get_screen(n).my_text = text
@@ -21,9 +25,9 @@ def change_to_transition(sm, text='Day 1', n='newday', type=DayChange, trans=Wip
     else:
         sm.switch_to(type(name=n), transition=trans)
         
-    Clock.schedule_once(partial(wait_n_change, sm, start_screen), 1)
+    Clock.schedule_once(partial(next_phase, sm, start_screen), 1)
     
-def wait_n_change(sm, start, dt):
+def next_phase(sm, start, dt):
     if start == 'main':
         sm.current = 'desk'
     elif start == 'desk':
