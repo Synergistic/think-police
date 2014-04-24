@@ -15,8 +15,10 @@ import data.gameData as c
 class Person:
     def __init__(self, **kwargs):
         self.name = self.find_random_name("male_names.txt") + " " + self.find_random_name("last_names.txt")
+        self.tier = self.find_random_tier()
         self.crime = self.find_random_crime()
         self.offenses = self.find_weighted_random() + ' Offense'
+        self.age = self.find_random_age()
         
     def find_random_name(self, file_text):
         #function to pick a random line in a text file and return a name on that line
@@ -39,6 +41,12 @@ class Person:
         choices = [('First', 2), ('Second', 1)]
         population = [val for val, cnt in choices for i in range(cnt)]
         return random.choice(population)
+    
+    def find_random_tier(self):
+        return random.choice(['proletariat', 'inner party', 'outer party', 'prominent'])
+    
+    def find_random_age(self):
+        return random.choice(xrange(18, 61))
 
 
 Builder.load_string('''<ThinkDesk>:
@@ -59,7 +67,7 @@ Builder.load_string('''<ThinkDesk>:
             BoxLayout: 
                 Button: 
                     text: 'Vaporize'
-                    on_press: root.erase()
+                    on_press: root.vaporize()
                 Button:
                     text: 'Reeducate'
                     on_press: root.reeducate()
@@ -79,7 +87,7 @@ class ThinkDesk(Screen):
     playing = False
     day = 1
     
-    def on_enter(self):
+    def on_pre_enter(self):
         self.start_day()
         
     def start_day(self):
@@ -93,17 +101,21 @@ class ThinkDesk(Screen):
             self.change_perp()
     
     def reeducate(self):
+        self.rb.check_rule(self.day, 'edu', self.current_perp)
         self.change_perp()
     
     def imprison(self):
+        self.rb.check_rule(self.day, 'imp', self.current_perp)       
         self.change_perp()
     
-    def erase(self):
+    def vaporize(self):
+        self.rb.check_rule(self.day, 'vap', self.current_perp)
         self.change_perp()
         
     def change_perp(self):
         if len(self.perps) > 0:
-            self.arr_warrant.new_person(self.perps.pop())
+            self.current_perp = self.perps.pop()
+            self.arr_warrant.new_person(self.current_perp)
         else:
             self.next_phase()
     
@@ -118,9 +130,11 @@ Builder.load_string('''<Rules>:
     start_tab: basic
     rule_list: rules
     orientation: 'vertical'
-    do_default_tab: False
+    do_default_tab: True
+    default_tab_text: 'Start>>'
+    default_tab_content: root.default_label
     tab_pos: 'top_left'
-    tab_width: 110
+    tab_width: self.width / 5
     TabbedPanelItem:
         id: basic
         text: 'Basic Truths'
@@ -145,6 +159,8 @@ class Page(TabbedPanelItem):
 class Rules(TabbedPanel):
     rule_list = ObjectProperty()
     crime_tab = c.CRIMES.keys()
+    default_label = Label(text='HELLO') #having trouble getting the first page's widgets to show up
+    choices = []
     
     def add_pages(self):
         self.clear_widgets()
@@ -153,38 +169,100 @@ class Rules(TabbedPanel):
             
     def add_rules(self, day):
         self.rule_list.clear_widgets()
-        for i in range(day):
-            rule_text = str(i+1) + '. ' + c.RULES[i]
-            self.rule_list.add_widget(Label(text=rule_text))
-        
+        rule_text = str(day) + '. ' + c.RULES[day-1]
+        self.rule_list.add_widget(Label(text=rule_text))
+            
+    def check_rule(self, rule, choice, person):
+        self.choices.append(choice)
+        if rule >= 1:
+            if not self.check_one(choice, person):
+                print "You failed rule 1"
+                return 0
+        if rule >= 2:
+            if not self.check_two(choice, person):
+                print "You failed rule 2"
+                return 0
+        if rule >= 3:
+            if not self.check_three(choice, person):
+                print "You failed rule 3"
+                return 0
+        if rule >= 4:
+            if not self.check_four(choice, person):
+                print "You failed rule 4"
+                return 0
+        if rule >= 5:
+            if not self.check_five(choice, person):
+                print "You failed rule 5"
 
+    def check_one(self, c, p):
+        #Reeducation is not to be wasted on proletariat
+        if p.tier == 'proletariat' and c == 'edu':
+            return False
+        return True
+    
+    def check_two(self, c, p):
+        #Outer Party members > 42 years of age are to be vaporized
+        if p.tier == 'outer party' and p.age > 42:
+            if c != 'vap':
+                return False
+        return True
+
+    def check_three(self, c, p):
+        #Inner Party members < 40 years of age are to be reeducated
+        if p.tier == 'inner party' and p.age < 40:
+            if c != 'edu':
+                return False
+        return True
+
+    def check_four(self, c, p):
+        #Prominent members are never to be imprisoned
+        if p.tier == 'prominent' and c == 'imp':
+            return False
+        return True
+    
+    def check_five(self, c, p):
+        #Do not use the same punish more than twice in a row
+        if len(self.choices) > 2:
+            if c == self.choices[-2] and c == self.choices[-3]:
+                return False
+        return True
+    
 Builder.load_string('''<Warrant>:
     orientation: 'vertical'
+    BoxLayout:
+    
+        Label:
+            text: root.name_text
+        Label:
+            text: root.age_text
     Label:
-        text: root.name_text
-    Label:
-        text: root.crime_text
-    Label:
-        text: root.offenses_text
+        text: root.tier_text
+    BoxLayout:
+        Label:
+            text: root.crime_text
+        Label:
+            text: root.offenses_text
 ''')
 
     
 class Warrant(BoxLayout):
     name_text = StringProperty('')
+    tier_text = StringProperty('')
     crime_text = StringProperty('')
     offenses_text = StringProperty('')
+    age_text = StringProperty('')
     
     def __init__(self, **kwargs):
         super(Warrant, self).__init__(**kwargs)
         first = Person()
-        self.name_text = first.name
-        self.crime_text = first.crime
-        self.offenses_text = first.offenses
+        self.new_person(first)
     
     def new_person(self, new):
         self.name_text = new.name
+        self.tier_text = new.tier
         self.crime_text = new.crime
-        self.offenses_text = new.offenses        
+        self.offenses_text = new.offenses   
+        self.age_text = 'Age: ' + str(new.age)
     
 
         
@@ -227,8 +305,6 @@ Builder.load_string('''<Status>:
             Button:
                 text: 'Done'
                 on_press: root.move_on()
-            Button:
-                text: 'dongs'
 ''')        
 
 class Status(Screen):
