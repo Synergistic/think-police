@@ -4,7 +4,7 @@ from kivy.lang import Builder
 from kivy.uix.screenmanager import Screen
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.accordion import Accordion, AccordionItem
-from kivy.properties import ObjectProperty, StringProperty
+from kivy.properties import ObjectProperty, StringProperty, NumericProperty
 from kivy.uix.tabbedpanel import TabbedPanel, TabbedPanelItem
 from kivy.uix.label import Label
 from transition import change_to_transition
@@ -43,10 +43,12 @@ class Person:
         return random.choice(population)
     
     def find_random_tier(self):
-        return random.choice(['proletariat', 'inner party', 'outer party', 'prominent'])
+        choices = [('proletariat', 3),  ('inner party', 2), ('outer party', 2), ('prominent', 1)]
+        population = [val for val, cnt in choices for i in range(cnt)]
+        return random.choice(population)
     
     def find_random_age(self):
-        return random.choice(xrange(18, 61))
+        return random.choice(xrange(18, 71))
 
 
 Builder.load_string('''<ThinkDesk>:
@@ -77,6 +79,7 @@ Builder.load_string('''<ThinkDesk>:
                 Button:
                     text: 'Quit'
                     on_press: root.manager.current = 'main'
+                    on_release: root.playing = False
 ''')
 
 
@@ -91,27 +94,38 @@ class ThinkDesk(Screen):
         self.start_day()
         
     def start_day(self):
-        if not self.playing and self.day < 6:
-            self.rb.add_rules(self.day)
-            self.rb.add_pages()
-            self.playing = True   
+        if not self.playing:
+            self.playing = True
+            self.day = 1
+            self.manager.get_screen('status').money = 50
+            self.manager.get_screen('status').sanity = 100
+            self.manager.get_screen('status').loyalty = 100 
+            
+        if self.day < 6:
+            self.rb.add_pages(self.day)    
             for i in range(random.randrange(4, 7)):
                 p = Person()
                 self.perps.append(p)
             self.change_perp()
     
     def reeducate(self):
-        self.rb.check_rule(self.day, 'edu', self.current_perp)
+        self.modify_stats(self.rb.check_rules(self.day, 'ree', self.current_perp))
         self.change_perp()
     
     def imprison(self):
-        self.rb.check_rule(self.day, 'imp', self.current_perp)       
+        self.modify_stats(self.rb.check_rules(self.day, 'imp', self.current_perp))
+        self.change_perp()
+  
+    def vaporize(self):
+        self.modify_stats(self.rb.check_rules(self.day, 'vap', self.current_perp))
         self.change_perp()
     
-    def vaporize(self):
-        self.rb.check_rule(self.day, 'vap', self.current_perp)
-        self.change_perp()
-        
+    def modify_stats(self, changes):
+        print 'You get', changes[0], '$,', changes[1], 'sanity, and', changes[2], 'loyalty'
+        self.manager.get_screen('status').money += changes[0]
+        self.manager.get_screen('status').sanity += changes[1]
+        self.manager.get_screen('status').loyalty += changes[2]
+
     def change_perp(self):
         if len(self.perps) > 0:
             self.current_perp = self.perps.pop()
@@ -121,32 +135,19 @@ class ThinkDesk(Screen):
     
     def next_phase(self):
         change_to_transition(self.manager, text='End of Work')
-        self.playing = False
         if self.day < 5:
             self.day += 1
     
         
 Builder.load_string('''<Rules>:
-    start_tab: basic
-    rule_list: rules
     orientation: 'vertical'
-    do_default_tab: True
-    default_tab_text: 'Start>>'
-    default_tab_content: root.default_label
-    tab_pos: 'top_left'
-    tab_width: self.width / 5
-    TabbedPanelItem:
-        id: basic
-        text: 'Basic Truths'
-        BoxLayout:
-            orientation: 'vertical'
-            id: rules
+        
 ''')
-class Page(TabbedPanelItem):
+class Page(AccordionItem):
     
     def __init__(self, crime, **kwargs):
         super(Page, self).__init__(**kwargs)
-        self.text = crime       
+        self.title = crime       
         self.add_widget(self.crime_page(c.CRIMES[crime]))
             
     def crime_page(self, c):
@@ -156,76 +157,114 @@ class Page(TabbedPanelItem):
         b.add_widget(Label(text=c[2]))
         return b
     
-class Rules(TabbedPanel):
-    rule_list = ObjectProperty()
+class Rules(Accordion):
     crime_tab = c.CRIMES.keys()
-    default_label = Label(text='HELLO') #having trouble getting the first page's widgets to show up
     choices = []
     
-    def add_pages(self):
+    def add_pages(self, day):
         self.clear_widgets()
         for c in self.crime_tab:
-            self.add_widget(Page(c))
+            self.add_widget(Page(c))        
+        a = AccordionItem(title='Basic Truths')
+        self.rule_list = BoxLayout(orientation='vertical')
+        a.add_widget(self.rule_list)
+        self.add_rules(day)
+        self.add_widget(a)
+
             
     def add_rules(self, day):
-        self.rule_list.clear_widgets()
-        rule_text = str(day) + '. ' + c.RULES[day-1]
-        self.rule_list.add_widget(Label(text=rule_text))
+        for i in range(day):
+            rule_text = str(i+1) + '. ' + c.RULES[i]
+            self.rule_list.add_widget(Label(text=rule_text))
+     
+    def check_suggested(self, ch, p):
+        rank = ['imp', 'ree', 'vap']
+        if p.offenses[0] == 'F':
+            answer = c.CRIMES[p.crime][1][:3].lower()
+        else:
+            answer = c.CRIMES[p.crime][2][:3].lower()
             
-    def check_rule(self, rule, choice, person):
+        if rank.index(answer) == rank.index(ch):
+            #suggested matches, +money, +loyalty
+            result = [1, 0, 1]
+            print 'Same as suggested'
+        if rank.index(answer) < rank.index(ch):
+            #more severe than suggested, +money, -2x sanity, +loyalty
+            result = [1, -2, 1]
+            print 'More than suggested'
+        elif rank.index(answer) > rank.index(ch):
+            #less severe than suggested, no money, -sanity, -loyalty
+            result = [0, -1, -1]
+            print 'Less than suggested'
+        return result
+    
+    def check_rules(self, rules, choice, person):
+        multiplier = self.check_suggested(choice, person)
         self.choices.append(choice)
-        if rule >= 1:
+        modifiers = [c.MONEY_C, c.SANITY_C, c.LOYALTY_C]
+        failed = False
+        if rules >= 1:
             if not self.check_one(choice, person):
                 print "You failed rule 1"
-                return 0
-        if rule >= 2:
+                failed = True
+        if rules >= 2:
             if not self.check_two(choice, person):
                 print "You failed rule 2"
-                return 0
-        if rule >= 3:
+                failed = True
+        if rules >= 3:
             if not self.check_three(choice, person):
                 print "You failed rule 3"
-                return 0
-        if rule >= 4:
+                failed = True
+        if rules >= 4:
             if not self.check_four(choice, person):
                 print "You failed rule 4"
-                return 0
-        if rule >= 5:
+                failed = True
+        if rules >= 5:
             if not self.check_five(choice, person):
                 print "You failed rule 5"
-
-    def check_one(self, c, p):
-        #Reeducation is not to be wasted on proletariat
-        if p.tier == 'proletariat' and c == 'edu':
-            return False
-        return True
+                failed = True
+                
+        if failed: 
+            multiplier = [0, multiplier[1], -2]
+        else:
+            print 'You passed all rules.'
+            
+        changes = [i*modifiers[multiplier.index(i)] for i in multiplier]
+        return changes
     
-    def check_two(self, c, p):
-        #Outer Party members > 42 years of age are to be vaporized
-        if p.tier == 'outer party' and p.age > 42:
-            if c != 'vap':
-                return False
-        return True
-
-    def check_three(self, c, p):
-        #Inner Party members < 40 years of age are to be reeducated
-        if p.tier == 'inner party' and p.age < 40:
-            if c != 'edu':
-                return False
-        return True
-
-    def check_four(self, c, p):
-        #Prominent members are never to be imprisoned
-        if p.tier == 'prominent' and c == 'imp':
-            return False
-        return True
-    
-    def check_five(self, c, p):
+    def check_one(self, ch, p):
         #Do not use the same punish more than twice in a row
         if len(self.choices) > 2:
-            if c == self.choices[-2] and c == self.choices[-3]:
+            if ch == self.choices[-2] and ch == self.choices[-3]:
                 return False
         return True
+
+    def check_two(self, ch, p):
+        #Rereecation is not to be wasted on proletariat
+        if p.tier == 'proletariat' and ch != 'vap':
+            return False
+        return True
+    
+    def check_three(self, ch, p):
+        #Outer Party members > 42 years of age are to be vaporized
+        if p.age > 42:
+            if ch != 'vap':
+                return False
+        return True
+
+    def check_four(self, ch, p):
+        #Inner Party members < 40 years of age are to be rereecated
+        if p.tier == 'inner party' and p.age < 40:
+            if ch != 'ree':
+                return False
+        return True
+
+    def check_five(self, ch, p):
+        #Prominent members are never to be imprisoned
+        if p.tier == 'prominent' and ch == 'imp':
+            return False
+        return True
+    
     
 Builder.load_string('''<Warrant>:
     orientation: 'vertical'
@@ -265,53 +304,104 @@ class Warrant(BoxLayout):
         self.age_text = 'Age: ' + str(new.age)
     
 
-        
+      
+      
+Builder.load_string('''<Ending>:
+    Label:
+        text: root.my_text
+''')
+
+class Ending(Screen):
+    my_text = StringProperty('Game Over') 
+ 
 Builder.load_string('''<Status>:
     name: 'status'
     BoxLayout:
         orientation: 'vertical'
         Label:
-            text: 'Status'        
+            text: 'Status'
+        BoxLayout:
+            Label:
+                text: 'Money: ' + str(root.money)
+            Label:
+                text: 'Loyalty:  ' + str(root.loyalty)
+            Label:
+                text: 'Sanity: ' + str(root.sanity)
         BoxLayout:
             orientation: 'horizontal'
+            Button:
+                text: 'Feed'
+                on_press: root.feed(wifey)
             Label:
                 text: 'Wife'
             ProgressBar:
-                max: 100
-                value: 50
-        BoxLayout:
-            orientation: 'horizontal'
-            Label:
-                text: 'Child'
-            ProgressBar:
-                max: 100
-                value: 50
-        BoxLayout:
-            orientation: 'horizontal'
-            Label:
-                text: 'Child'
-            ProgressBar:
-                max: 100
-                value: 50
-        BoxLayout:
-            orientation: 'horizontal'
-            Label:
-                text: 'You'
-            ProgressBar:
+                id: wifey
                 max: 100
                 value: 50
         BoxLayout:
             orientation: 'horizontal'
             Button:
-                text: 'Done'
-                on_press: root.move_on()
+                text: 'Feed'
+                on_press: root.feed(kid)            
+            Label:
+                text: 'Child'
+            ProgressBar:
+                id: kid
+                max: 100
+                value: 50
+        BoxLayout:
+            orientation: 'horizontal'
+            Button:
+                text: 'Feed'
+                on_press: root.feed(you)
+            Label:
+                text: 'You'
+            ProgressBar:
+                id: you
+                max: 100
+                value: 50
+        Button:
+            text: 'Done'
+            on_press: root.move_on(you, kid, wifey)
 ''')        
 
 class Status(Screen):
+    money = NumericProperty(50)
+    loyalty = NumericProperty(100)
+    sanity = NumericProperty(100)
+    starving = False
+    
     def get_day(self):
         d = 'Day '+str(self.manager.get_screen('desk').day)
         return d
 
-    def move_on(self):
-        change_to_transition(self.manager, text=self.get_day())
+    def move_on(self, *args):
+        for person in args:
+            if person.value <= 0:
+                self.starving = True
+        if not self.ending():
+            change_to_transition(self.manager, text=self.get_day())
+            for person in args:
+                person.value -= 35
 
+    def feed(self, p):
+        if self.money >= c.FOOD_COST:
+            self.money -= c.FOOD_COST
+            p.value += c.FOOD_EFFECT
+        else:
+            print 'Not enough money'
+        
+    def ending(self):
+        if self.loyalty <= 0:
+            change_to_transition(self.manager, text='You were caught', type=Ending, n='end')
+            return True
+        elif self.sanity <= 0:
+            change_to_transition(self.manager, text='You went insane', type=Ending, n='end')
+            return True
+        elif self.starving:
+            change_to_transition(self.manager, text='You & your family starved', type=Ending, n='end')
+            return True
+        return False
+        
+        
+            

@@ -12,8 +12,8 @@ Builder.load_string('''<DayChange>:
 
 class DayChange(Screen):
     my_text = StringProperty('Day 1')
-
-def change_to_transition(sm, text='Day 1', n='newday', type=DayChange, trans=WipeTransition()):
+    
+def change_to_transition(sm, text='Day 1', n='newday', type=DayChange):
     '''Takes a screenmananager, text to display, the transition screen name, the actual
     transition screen, and the transition type. Makes the switch and then schedules the
     next transition to the next phase of the game.'''
@@ -23,15 +23,27 @@ def change_to_transition(sm, text='Day 1', n='newday', type=DayChange, trans=Wip
         sm.get_screen(n).my_text = text
         sm.current = n
     else:
-        sm.switch_to(type(name=n), transition=trans)
-        
-    Clock.schedule_once(partial(next_phase, sm, start_screen), 1)
+        s = type(name=n)
+        s.my_text = text
+        sm.add_widget(s)
+        sm.current = n
+    
+    sm.transition = FadeTransition()
+    if sm.current == 'newday':        
+        Clock.schedule_once(partial(next_phase, sm, start_screen), 1)
+    elif sm.current == 'end':
+        Clock.schedule_once(partial(restart, sm), 5)
     
 def next_phase(sm, start, dt):
+
     if start == 'main':
         sm.current = 'desk'
     elif start == 'desk':
         sm.current = 'status'
     elif start == 'status':
         sm.current = 'desk'
-        
+    
+
+def restart(sm, dt):
+    sm.current = 'main'
+    
