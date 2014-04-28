@@ -89,6 +89,7 @@ class ThinkDesk(Screen):
     perps = []
     playing = False
     day = 1
+    strikes = 0
     
     def on_pre_enter(self):
         self.start_day()
@@ -97,13 +98,14 @@ class ThinkDesk(Screen):
         if not self.playing:
             self.playing = True
             self.day = 1
+            self.strikes = 0
             self.manager.get_screen('status').money = 50
             self.manager.get_screen('status').sanity = 100
             self.manager.get_screen('status').loyalty = 100 
             
         if self.day < 6:
             self.rb.add_pages(self.day)    
-            for i in range(random.randrange(4, 7)):
+            for i in range(random.randrange(5, 5+self.day)):
                 p = Person()
                 self.perps.append(p)
             self.change_perp()
@@ -134,9 +136,13 @@ class ThinkDesk(Screen):
             self.next_phase()
     
     def next_phase(self):
-        change_to_transition(self.manager, text='End of Work')
-        if self.day < 5:
-            self.day += 1
+        if self.strikes >= 3:
+            change_to_transition(self.manager, text='Too many errors, goodbye comrade.', type=Ending, n='end')
+            self.playing = False
+        else:
+            change_to_transition(self.manager, text='End of Work')
+            if self.day < 5:
+                self.day += 1
     
         
 Builder.load_string('''<Rules>:
@@ -153,8 +159,8 @@ class Page(AccordionItem):
     def crime_page(self, c):
         b = BoxLayout(orientation='vertical')
         b.add_widget(Label(text=c[0]))
-        b.add_widget(Label(text=c[1]))
-        b.add_widget(Label(text=c[2]))
+        b.add_widget(Label(text='First Offense: ' + c[1]))
+        b.add_widget(Label(text='Seconds Offense: ' +c[2]))
         return b
     
 class Rules(Accordion):
@@ -170,6 +176,15 @@ class Rules(Accordion):
         a.add_widget(self.rule_list)
         self.add_rules(day)
         self.add_widget(a)
+        w = AccordionItem(title='Welcome')
+        b = BoxLayout(orientation='vertical')
+        b.add_widget(Label(text='\n'.join(['Welcome to the ThoughtPolice comrade.',
+                                           'You are responsible for processing individuals that break the law.',
+                                           'Here is a copy of the Law Enforcement Guide.',
+                                           'There is a list of the Basic Truths that are to ALWAYS BE FOLLOWED.',
+                                           'You will also find various crimes and their RECOMMENDED punishments.'])))
+        w.add_widget(b)
+        self.add_widget(w)
 
             
     def add_rules(self, day):
@@ -226,6 +241,7 @@ class Rules(Accordion):
                 
         if failed: 
             multiplier = [0, multiplier[1], -2]
+            self.parent.parent.strikes += 1
         else:
             print 'You passed all rules.'
             
@@ -236,6 +252,7 @@ class Rules(Accordion):
         #Do not use the same punish more than twice in a row
         if len(self.choices) > 2:
             if ch == self.choices[-2] and ch == self.choices[-3]:
+                self.choices = []
                 return False
         return True
 
@@ -297,10 +314,10 @@ class Warrant(BoxLayout):
         self.new_person(first)
     
     def new_person(self, new):
-        self.name_text = new.name
-        self.tier_text = new.tier
-        self.crime_text = new.crime
-        self.offenses_text = new.offenses   
+        self.name_text = 'Name: ' + new.name
+        self.tier_text = 'Class: ' + new.tier
+        self.crime_text = 'Crime: ' + new.crime
+        self.offenses_text = new.offenses
         self.age_text = 'Age: ' + str(new.age)
     
 
@@ -366,7 +383,7 @@ Builder.load_string('''<Status>:
 ''')        
 
 class Status(Screen):
-    money = NumericProperty(50)
+    money = NumericProperty(100)
     loyalty = NumericProperty(100)
     sanity = NumericProperty(100)
     starving = False
@@ -382,7 +399,9 @@ class Status(Screen):
         if not self.ending():
             change_to_transition(self.manager, text=self.get_day())
             for person in args:
-                person.value -= 35
+                person.value -= 25
+        else:
+            self.manager.get_screen('desk').playing = False
 
     def feed(self, p):
         if self.money >= c.FOOD_COST:
@@ -400,6 +419,9 @@ class Status(Screen):
             return True
         elif self.starving:
             change_to_transition(self.manager, text='You & your family starved', type=Ending, n='end')
+            return True
+        elif int(self.get_day()[4]) >= 6:
+            change_to_transition(self.manager, text='The reeducation is complete.', type=Ending, n='end')
             return True
         return False
         
