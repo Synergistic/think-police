@@ -5,12 +5,26 @@ from kivy.uix.screenmanager import Screen
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.accordion import Accordion, AccordionItem
 from kivy.properties import ObjectProperty, StringProperty, NumericProperty
-from kivy.uix.tabbedpanel import TabbedPanel, TabbedPanelItem
+from kivy.uix.popup import Popup
 from kivy.uix.label import Label
+from kivy.uix.widget import Widget
+from kivy.clock import Clock
 from transition import change_to_transition
+from kivy.animation import Animation
 import os, random
 import data.gameData as c
 
+Builder.load_string('''<Divide>:
+    size_hint: (0.04, 1)
+    canvas.before:
+        Color:
+            rgba: .2, .2, .2, 1
+        Rectangle:
+            pos: self.pos
+            size: self.size
+''')
+class Divide(Widget):
+    pass
 
 class Person:
     def __init__(self, **kwargs):
@@ -54,89 +68,148 @@ class Person:
 Builder.load_string('''<ThinkDesk>:
     name: 'desk'
     rb: rule_book
-    arr_warrant: arrest_warrant
+    rec: recommend
+    arr_desk: my_desk
     BoxLayout:
-        size_hint: (1, 0.8)
-        pos_hint: {'center_y': 0.6}
-        Rules:
-            id: rule_book
-        Warrant:
-            id: arrest_warrant
-    AnchorLayout:
-        size_hint: (1, 0.2)
+        orientation: 'vertical'
         BoxLayout:
-            orientation: 'vertical'
-            BoxLayout: 
-                Button: 
+            size_hint: (1, 0.45)
+            pos_hint: {'center_y': 0.6}
+            Rules:
+                orientation: 'vertical'
+
+                id: rule_book
+            Recs:
+                orientation: 'vertical'
+                id: recommend
+        Widget:
+            size_hint: (1, 0.01)
+            canvas.before:
+                Color:
+                    rgba: .1, .1, .1, 1
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
+        Desk:
+            id: my_desk
+            size_hint: (1, 0.475)
+        BoxLayout:
+            size_hint: (1, 0.075)
+            size: 200, 400
+            Widget:
+                id: vap
+                canvas.before:
+                    Color:
+                        rgba: .5, .5, .5, 1
+                    Rectangle:
+                        pos: self.pos
+                        size: self.size
+                Label:
+                    size: vap.size
+                    pos: vap.pos
                     text: 'Vaporize'
-                    on_press: root.vaporize()
-                Button:
+            Divide:
+            Widget:
+                id: ree
+                canvas.before:
+                    Color:
+                        rgba: .5, .5, .5, 1
+                    Rectangle:
+                        pos: self.pos
+                        size: self.size
+                Label:
+                    size: ree.size
+                    pos: ree.pos
                     text: 'Reeducate'
-                    on_press: root.reeducate()
-                Button:
+            Divide:
+            Widget:
+                id: imp
+                canvas.before:
+                    Color:
+                        rgba: .5, .5, .5, 1
+                    Rectangle:
+                        pos: self.pos
+                        size: self.size
+                Label:
+                    size: imp.size
+                    pos: imp.pos
                     text: 'Imprison'
-                    on_press: root.imprison()
-                Button:
-                    text: 'Quit'
-                    on_press: root.manager.current = 'main'
-                    on_release: root.playing = False
+            Divide:
+            Button:
+                text: 'Quit'
+                on_press: root.manager.current = 'main'
+                on_release: root.playing = False
 ''')
 
 
 class ThinkDesk(Screen):
     rb = ObjectProperty()
-    arr_warrant = ObjectProperty()
+    rec = ObjectProperty()
+    arr_desk = ObjectProperty()
     perps = []
+
     playing = False
     day = 1
     strikes = 0
     
     def on_pre_enter(self):
+        if not self.playing:
+            self.welcome_pop()
         self.start_day()
+    
+    def welcome_pop(self):
+        p = Popup(title='Greetings',
+                  content=Label(text = '\n'.join(['Welcome to the ThoughtPolice comrade.', ' ',
+                        'You are responsible for processing individuals that break the law.',
+                        'Drop their arrest card into the appropriate slot.', ' ',
+                        'Here is a copy of the Law Enforcement Guide.',
+                        'Violating Basic Truths multiple times will result in termination.',
+                        'Crime pages list appropriate punishments, deviation may',
+                        'have unintended consequences'])),
+                  size_hint=(0.6, 0.6))
+        p.open()
         
     def start_day(self):
         if not self.playing:
+            
             self.playing = True
             self.day = 1
             self.strikes = 0
+            self.perps = []
             self.manager.get_screen('status').money = 50
             self.manager.get_screen('status').sanity = 100
             self.manager.get_screen('status').loyalty = 100 
             
         if self.day < 6:
-            self.rb.add_pages(self.day)    
-            for i in range(random.randrange(5, 5+self.day)):
+            self.rb.add_pages(self.day)
+            self.rec.add_pages()
+            perp_count = random.randrange(5, 6+self.day)
+            print 'Day ' + str(self.day)
+            print 'Today we will have ' + str(perp_count) + ' criminals'
+            for i in range(perp_count):
                 p = Person()
                 self.perps.append(p)
             self.change_perp()
     
-    def reeducate(self):
-        self.modify_stats(self.rb.check_rules(self.day, 'ree', self.current_perp))
-        self.change_perp()
-    
-    def imprison(self):
-        self.modify_stats(self.rb.check_rules(self.day, 'imp', self.current_perp))
-        self.change_perp()
-  
-    def vaporize(self):
-        self.modify_stats(self.rb.check_rules(self.day, 'vap', self.current_perp))
-        self.change_perp()
-    
+    def choice(self, ch, card):
+        self.modify_stats(self.rb.check_rules(self.day, ch, self.current_perp))
+        Clock.schedule_once(self.change_perp, 1)
+        
     def modify_stats(self, changes):
         print 'You get', changes[0], '$,', changes[1], 'sanity, and', changes[2], 'loyalty'
         self.manager.get_screen('status').money += changes[0]
         self.manager.get_screen('status').sanity += changes[1]
         self.manager.get_screen('status').loyalty += changes[2]
 
-    def change_perp(self):
+    def change_perp(self, *dt):
         if len(self.perps) > 0:
             self.current_perp = self.perps.pop()
-            self.arr_warrant.new_person(self.current_perp)
+            self.arr_desk.arr_card.new_person(self.current_perp)
         else:
             self.next_phase()
     
     def next_phase(self):
-        if self.strikes >= 3:
+        if self.strikes >= 5:
             change_to_transition(self.manager, text='Too many errors, goodbye comrade.', type=Ending, n='end')
             self.playing = False
         else:
@@ -145,10 +218,7 @@ class ThinkDesk(Screen):
                 self.day += 1
     
         
-Builder.load_string('''<Rules>:
-    orientation: 'vertical'
-        
-''')
+
 class Page(AccordionItem):
     
     def __init__(self, crime, **kwargs):
@@ -163,30 +233,103 @@ class Page(AccordionItem):
         b.add_widget(Label(text='Seconds Offense: ' +c[2]))
         return b
     
+Builder.load_string('''<Card>:
+    size: 200, 325
+    canvas.before:
+        Color:
+            a: 1
+        Rectangle:
+            pos: self.pos
+            size: self.size
+            source: 'data/images/card.png'
+    BoxLayout:
+        orientation: 'vertical'
+        pos: root.x, root.y + 65
+        size: root.size[0], root.size[1] - 65
+        Label:
+            text: root.name_text
+        Label:
+            text: root.age_text
+        Label:
+            text: root.tier_text
+        
+        Label:
+            text: root.crime_text
+''')
+class Card(Widget):
+    name_text = StringProperty('')
+    age_text = StringProperty('')
+    tier_text = StringProperty('')
+    crime_text = StringProperty('')
+    decided = False
+    
+    def __init__(self, **kwargs):
+        super(Card, self).__init__(**kwargs)
+        self.new_person(Person())
+    
+    def new_person(self, new):
+        self.name_text = new.name
+        self.tier_text = new.tier.capitalize()
+        self.age_text = ' '.join(['Aged', str(new.age)])
+        self.crime_text = ' '.join([new.offenses.partition(' ')[0], new.crime])
+
+        self.center_y = 268
+        self.x = 500
+        self.decided = False
+    
+
+    def on_touch_move(self, touch):
+        if not self.decided:
+            if self.x + self.width >= touch.x >= self.x and\
+               self.y + self.height >= touch.y >= self.y:
+                self.center_y = touch.y
+                self.center_x = touch.x
+    
+    def on_touch_up(self, touch):
+        '''detects which choice it is let go in, then returns that choice
+        to the main game object and animates the card'''
+        points = [(240, 60), (720, 60), (1200, 60)]
+        options = ['vaporize', 'reeducate', 'imprison']
+        if not self.decided:
+            for point in points:
+                if self.collide_point(point[0], point[1]):
+                    c = options[points.index(point)]
+                    self.decided = True
+                    self.parent.parent.parent.choice(c[:3], self)
+                    Animation(y=point[1]-self.height, duration=0.5).start(self)
+                
+Builder.load_string('''<Desk>:
+    canvas:
+        Color:
+            a: 1
+        Rectangle:
+            size: self.size
+            pos: self.pos
+            source: 'data/images/desk.png'
+
+    arr_card: crd
+    Card:
+        id: crd
+        center_y: root.center_y
+        x: root.x + (root.center_x - (self.width/2))
+ 
+''')
+
+class Desk(Widget):
+    arr_card = ObjectProperty()
+    
 class Rules(Accordion):
     crime_tab = c.CRIMES.keys()
     choices = []
     
     def add_pages(self, day):
-        self.clear_widgets()
-        for c in self.crime_tab:
-            self.add_widget(Page(c))        
+        self.clear_widgets()    
         a = AccordionItem(title='Basic Truths')
         self.rule_list = BoxLayout(orientation='vertical')
         a.add_widget(self.rule_list)
         self.add_rules(day)
         self.add_widget(a)
-        w = AccordionItem(title='Welcome')
-        b = BoxLayout(orientation='vertical')
-        b.add_widget(Label(text='\n'.join(['Welcome to the ThoughtPolice comrade.',
-                                           'You are responsible for processing individuals that break the law.',
-                                           'Here is a copy of the Law Enforcement Guide.',
-                                           'There is a list of the Basic Truths that are to ALWAYS BE FOLLOWED.',
-                                           'You will also find various crimes and their RECOMMENDED punishments.'])))
-        w.add_widget(b)
-        self.add_widget(w)
-
-            
+  
     def add_rules(self, day):
         for i in range(day):
             rule_text = str(i+1) + '. ' + c.RULES[i]
@@ -241,7 +384,7 @@ class Rules(Accordion):
                 
         if failed: 
             multiplier = [0, multiplier[1], -2]
-            self.parent.parent.strikes += 1
+            self.parent.parent.parent.strikes += 1
         else:
             print 'You passed all rules.'
             
@@ -282,47 +425,26 @@ class Rules(Accordion):
             return False
         return True
     
-    
-Builder.load_string('''<Warrant>:
-    orientation: 'vertical'
-    BoxLayout:
-    
-        Label:
-            text: root.name_text
-        Label:
-            text: root.age_text
-    Label:
-        text: root.tier_text
-    BoxLayout:
-        Label:
-            text: root.crime_text
-        Label:
-            text: root.offenses_text
-''')
 
+class Recs(Accordion):
+    crime_tab = c.CRIMES.keys()
     
-class Warrant(BoxLayout):
-    name_text = StringProperty('')
-    tier_text = StringProperty('')
-    crime_text = StringProperty('')
-    offenses_text = StringProperty('')
-    age_text = StringProperty('')
-    
-    def __init__(self, **kwargs):
-        super(Warrant, self).__init__(**kwargs)
-        first = Person()
-        self.new_person(first)
-    
-    def new_person(self, new):
-        self.name_text = 'Name: ' + new.name
-        self.tier_text = 'Class: ' + new.tier
-        self.crime_text = 'Crime: ' + new.crime
-        self.offenses_text = new.offenses
-        self.age_text = 'Age: ' + str(new.age)
-    
+    def add_pages(self):
+        self.clear_widgets()
+        for c in self.crime_tab:
+            self.add_widget(Page(c))  
+            
+        l = '\n'.join(['Proletariat - faggots',
+                       'Outer Party - Less faggots',
+                       'Inner Party - Not faggots',
+                       'Prominent - Large, recognizable dicks'])
+        a = AccordionItem(title='Classes')
+        class_list = BoxLayout(orientation='vertical')
+        class_list.add_widget(Label(text=l))
+        a.add_widget(class_list)
+        self.add_widget(a)
 
-      
-      
+        lab = Label(text=l)
 Builder.load_string('''<Ending>:
     Label:
         text: root.my_text
@@ -383,7 +505,7 @@ Builder.load_string('''<Status>:
 ''')        
 
 class Status(Screen):
-    money = NumericProperty(100)
+    money = NumericProperty(50)
     loyalty = NumericProperty(100)
     sanity = NumericProperty(100)
     starving = False
