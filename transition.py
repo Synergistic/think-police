@@ -10,8 +10,9 @@ Builder.load_string('''<DayChange>:
 ''')
 
 
+
 class DayChange(Screen):
-    my_text = StringProperty('Day 1')
+    my_text = StringProperty('')
     
 def change_to_transition(sm, text='Day 1', n='newday', type=DayChange):
     '''Takes a screenmananager, text to display, the transition screen name, the actual
