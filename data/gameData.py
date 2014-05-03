@@ -8,9 +8,9 @@ RULES = ['The same sentence should not be used more than twice consecutively.',
          'Prominent members are public figures and are not to be imprisoned.']
 
 #Various crimes, & suggested punishments [Definition, 1st offense, 2nd]
-CRIMES = {'Treason': ['The crime of betraying The Party',
-                      'Reeducation', 
-                      'Vaporization'],
+CRIMES = {'Oldthink': ["Holding ideas and/or patterns of thought not consistent with The Party's",
+                      'Imprisonment', 
+                      'Reeducation'],
           'Thoughtcrime': ['The criminal act of holding unspoken beliefs\n or doubts that oppose or question The Party',
                             'Vaporization',
                             'Vaporization'],
@@ -18,17 +18,17 @@ CRIMES = {'Treason': ['The crime of betraying The Party',
                         'Imprisonment',
                         'Reeducation'],
           'Facecrime': ['To wear an improper expression on your face,\n i.e. to grimace at a victory announcement',
-                         'Reeducation',
+                         'Imprisonment',
                          'Vaporization'],
           'Sexcrime': ['The act of sex for any reason other than procreation.',
                         'Reeducation',
-                        'Reeducation']
+                        'Vaporization']
                             
           }
                            
                            
-MONEY_C = 5
-SANITY_C = 5
+MONEY_C = 10
+SANITY_C = 10
 LOYALTY_C = 5
 FOOD_COST = 10
 FOOD_EFFECT = 10
