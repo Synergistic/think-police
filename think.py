@@ -434,10 +434,10 @@ class Recs(Accordion):
         for c in self.crime_tab:
             self.add_widget(Page(c))  
             
-        l = '\n'.join(['Proletariat - faggots',
-                       'Outer Party - Less faggots',
-                       'Inner Party - Not faggots',
-                       'Prominent - Large, recognizable dicks'])
+        l = '\n'.join(['Proletariat - nobodies',
+                       'Outer Party - somebodies',
+                       'Inner Party - slightly more important somebodies',
+                       'Prominent - Known somebodies'])
         a = AccordionItem(title='Classes')
         class_list = BoxLayout(orientation='vertical')
         class_list.add_widget(Label(text=l))
