@@ -18,7 +18,7 @@ class ThinkApp(App):
         for scn_name in SCREENS.keys():
             self.sm.add_widget(SCREENS[scn_name])
         self.sm.current = 'main'
-        Window.size = (1024, 768)
+        Window.size = (1920, 1080)
         Window.fullscreen = False
         return self.sm
 
