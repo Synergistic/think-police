@@ -7,9 +7,9 @@ from think import ThinkDesk, Status
 from kivy.core.window import Window
 
 
-SCREENS = {'main': Main(),
-           'desk': ThinkDesk(),
-           'status': Status()}
+SCREENS = {'desk': ThinkDesk(),
+           'status': Status(),
+           'main': Main()}
 
 class ThinkApp(App):
     
@@ -19,7 +19,7 @@ class ThinkApp(App):
             self.sm.add_widget(SCREENS[scn_name])
         self.sm.current = 'main'
         Window.size = (1920, 1080)
-        Window.fullscreen = False
+        Window.fullscreen = True
         return self.sm
 
 if __name__ == '__main__':

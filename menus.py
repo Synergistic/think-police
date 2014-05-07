@@ -14,9 +14,13 @@ Builder.load_string('''<Main>:
         Button:
             text: 'Start Game'
             on_press: root.new_game()
-        Button:
-            text: 'Settings'
-            on_press: app.open_settings()
+        BoxLayout:
+            Button:
+                text: 'Settings'
+                on_press: app.open_settings()
+            Button:
+                text: 'Quit'
+                on_press: app.stop()
 ''')
 
 
