@@ -159,21 +159,8 @@ class ThinkDesk(Screen):
     
     def on_pre_enter(self):
         c.set_random_crimes()
-        if not self.playing:
-            self.welcome_pop()
         self.start_day()
-    
-    def welcome_pop(self):
-        p = Popup(title='Greetings',
-                  content=Label(text = '\n'.join(['You are responsible for processing crimethinkers that break the law.',
-                        'Drop their arrest card into the appropriate slot.', ' ',
-                        'Here is a copy of the Law Enforcement Guide.',
-                        'Violating Basic Truths multiple times will result in termination.',
-                        'Crime pages list appropriate punishments, deviation may',
-                        'have unintended consequences'])),
-                  size_hint=(0.6, 0.6))
-        p.open()
-        
+       
     def start_day(self):
         if not self.playing:   
             self.day = 1
