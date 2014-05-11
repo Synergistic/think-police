@@ -2,14 +2,15 @@ __author__ = 'Synergy'
 
 from kivy.app import App
 from kivy.uix.screenmanager import ScreenManager
-from menus import Main
+from menus import Main, HowTo, Thanks
 from think import ThinkDesk, Status
 from kivy.core.window import Window
 
-
 SCREENS = {'desk': ThinkDesk(),
            'status': Status(),
-           'main': Main()}
+           'howto' : HowTo(),
+           'main': Main(),
+           'thanks': Thanks()}
 
 class ThinkApp(App):
     

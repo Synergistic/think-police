@@ -4,15 +4,13 @@ from kivy.lang import Builder
 from kivy.uix.screenmanager import Screen
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.accordion import Accordion, AccordionItem
-from kivy.properties import ObjectProperty, StringProperty, NumericProperty
-from kivy.uix.popup import Popup
+from kivy.properties import ObjectProperty, StringProperty
 from kivy.uix.label import Label
 from kivy.uix.widget import Widget
 from kivy.clock import Clock
 from transition import change_to_transition
 from kivy.animation import Animation
 import os, random
-from functools import partial
 import data.gameData as c
 
 Builder.load_string('''<Divide>:
@@ -28,11 +26,12 @@ class Divide(Widget):
     pass
 
 class Person:
-    def __init__(self, **kwargs):
-        self.name = self.find_random_name("male_names.txt") + " " + self.find_random_name("last_names.txt")
+    def __init__(self, age_limit=45, **kwargs):
+        gender = random.choice(["male_names.txt", "female_names.txt"])
+        self.name = self.find_random_name(gender) + " " + self.find_random_name("last_names.txt")
         self.tier = self.find_random_tier()
         self.crime = self.find_random_crime()
-        self.age = self.find_random_age()
+        self.age = self.find_random_age(age_limit)
         
     def find_random_name(self, file_text):
         #function to pick a random line in a text file and return a name on that line
@@ -52,12 +51,12 @@ class Person:
         return random.choice(c.CRIMES.keys())
     
     def find_random_tier(self):
-        choices = [('proletariat', 5),  ('inner party', 2), ('outer party', 3)]
+        choices = [('proletariat', 4),  ('inner party', 2), ('outer party', 3)]
         population = [val for val, cnt in choices for i in range(cnt)]
         return random.choice(population)
     
-    def find_random_age(self):
-        return random.choice(xrange(20, 49))
+    def find_random_age(self, upper_limit):
+        return random.choice(xrange(20, upper_limit))
 
 
 Builder.load_string('''<ThinkDesk>:
@@ -87,67 +86,23 @@ Builder.load_string('''<ThinkDesk>:
                     size: self.size
         Desk:
             id: my_desk
-            size_hint: (1, 0.475)
-        BoxLayout:
-            size_hint: (1, 0.075)
-            size: 200, 400
-            Widget:
-                id: vap
-                canvas.before:
-                    Color:
-                        rgba: .5, .5, .5, 1
-                    Rectangle:
-                        pos: self.pos
-                        size: self.size
-                Label:
-                    size: vap.size
-                    pos: vap.pos
-                    text: 'Vaporize'
-            Divide:
-            Widget:
-                id: ree
-                canvas.before:
-                    Color:
-                        rgba: .5, .5, .5, 1
-                    Rectangle:
-                        pos: self.pos
-                        size: self.size
-                Label:
-                    size: ree.size
-                    pos: ree.pos
-                    text: 'Reeducate'
-            Divide:
-            Widget:
-                id: imp
-                canvas.before:
-                    Color:
-                        rgba: .5, .5, .5, 1
-                    Rectangle:
-                        pos: self.pos
-                        size: self.size
-                Label:
-                    size: imp.size
-                    pos: imp.pos
-                    text: 'Room 101'
-                    
-            Divide:
-            Widget:
-                id: joy
-                canvas.before:
-                    Color:
-                        rgba: .4, .4, .4, 1
-                    Rectangle:
-                        pos: self.pos
-                        size: self.size
-                Label:
-                    size: joy.size
-                    pos: joy.pos
-                    text: 'Joycamp'
-            Divide:
-            Button:
-                text: 'Quit'
-                on_press: root.manager.current = 'main'
-                on_release: root.playing = False
+            size_hint: (1, 0.475) 
+        Widget:
+            size_hint: (1, 0.061625)
+            canvas.after:
+                Color:
+                    a: 1
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
+                    source: 'data/images/tubes.png'
+    AnchorLayout:
+        anchor_x: 'right'
+        anchor_y: 'top'
+        Button:
+            size_hint: (0.0411, 0.0717)
+            background_normal: 'data/images/back.png'
+            on_release: root.quit()
 ''')
 
 
@@ -155,10 +110,10 @@ class ThinkDesk(Screen):
     rb, rec, arr_desk = ObjectProperty(), ObjectProperty(), ObjectProperty()
     perps = []
     playing = False
-    day, strikes = 0, 0
+    day, strikes, score = 0, 0, 0
     
     def on_pre_enter(self):
-        c.set_random_crimes()
+        c.set_random_sentences()
         self.start_day()
        
     def start_day(self):
@@ -166,17 +121,21 @@ class ThinkDesk(Screen):
             self.day = 1
             self.strikes = 0
             self.perps = []
-            self.manager.get_screen('status').reset_stats()
             self.playing = True
             
         if self.day < 6:
             self.rb.add_pages(self.day)
+            self.score = 0
             self.rb.choices = []
             self.rec.add_pages()
-            perp_count = random.randrange(5, 6+self.day)
-            for i in range(perp_count):
-                p = Person()
+            self.perp_count = random.randrange(6, 8+self.day)
+            max_age = 45
+            for i in range(self.perp_count):
+                p = Person(max_age)
+                if p.age >= 40:
+                    max_age -=2
                 self.perps.append(p)
+                
             self.change_perp()
     
     def choice(self, ch, card):
@@ -184,10 +143,8 @@ class ThinkDesk(Screen):
         Clock.schedule_once(self.change_perp, 1)
         
     def modify_stats(self, changes):
-        print 'You get', changes, '$,'
-        self.manager.get_screen('status').money += changes
-
-
+        self.score += changes
+        
     def change_perp(self, *dt):
         if len(self.perps) > 0:
             self.current_perp = self.perps.pop()
@@ -197,12 +154,17 @@ class ThinkDesk(Screen):
     
     def next_phase(self):
         if self.strikes >= 4:
-            change_to_transition(self.manager, text='The mission has been a failure.\nYou will be replaced.', type=Ending, n='end')
+            change_to_transition(self.manager, text='[i]Divergence is doubleplus ungood.[/i]', type=Ending, n='end')
             self.playing = False
         else:
             change_to_transition(self.manager, text='End of Work')
             if self.day <= 5:
                 self.day += 1
+            self.manager.get_screen('status').get_stats(self.score, self.perp_count)
+            
+    def quit(self):
+        self.manager.current = 'main'
+        self.playing = False
     
         
 
@@ -216,12 +178,12 @@ class Page(AccordionItem):
     def crime_page(self, c):
         b = BoxLayout(orientation='vertical')
         b.add_widget(Label(text=c[0]))
-        b.add_widget(Label(text='First Offense: ' + c[1]))
+        b.add_widget(Label(text=c[1]))
         return b
     
 Builder.load_string('''<Card>:
     size: 200, 325
-    canvas.before:
+    canvas:
         Color:
             a: 1
         Rectangle:
@@ -277,10 +239,9 @@ class Card(Widget):
         width = self.parent.parent.parent.width
         height = self.parent.parent.parent.height * 0.06
         x_off = 0.1
-        points = [(width * x_off, height), ((x_off * 3.0) * width, height),
-                  ((x_off * 5.0) * width, height), ((x_off * 7.0) * width, height)]
+        points = [(width * 0.24479167 , height), (0.41458333 * width, height),
+                  (0.5859375 * width, height), (0.75859375 * width, height)]
         options = ['vaporize', 'reeducate', 'room', 'joycamp']
-        sounds = [c.vapor_sound, c.edu_sound, c.room_sound, c.joy_sound]
         if not self.decided:
             for point in points:
                 if self.collide_point(point[0], point[1]):
@@ -289,12 +250,8 @@ class Card(Widget):
                     self.decided = True
                     self.parent.parent.parent.choice(choice[:3], self)
                     Animation(y=point[1]-self.height, duration=0.5).start(self)
-                    c.ticket_sound.play()
-                    Clock.schedule_once(partial(self.play_sound, sounds[ch_index]), 1)
-                    
-    def play_sound(self, sound, dt):
-        if sound:
-            sound.play()
+                    if self.parent.parent.parent.manager.get_screen('main').sound:
+                        c.ticket_sound.play()
             
 Builder.load_string('''<Desk>:
     canvas:
@@ -329,6 +286,7 @@ class Rules(Accordion):
         self.add_widget(a)
   
     def add_rules(self, day):
+        self.choices = []
         for i in range(day):
             rule_text = str(i+1) + '. ' + c.RULES[i]
             self.rule_list.add_widget(Label(text=rule_text))
@@ -336,17 +294,15 @@ class Rules(Accordion):
     def check_suggested(self, ch, p):
         answer = c.CRIMES[p.crime][1][:3].lower()
         if answer == ch:
-            #suggested matches
             result = 1.0
             print 'Same as suggested'
         else:
-            #no match, half money
             result = 0.5
-            print 'Not the same as suggested'
+            print 'Differs from suggested'
         return result
     
     def check_rules(self, rules, choice, person):
-        multiplier = self.check_suggested(choice, person)
+        net_change = self.check_suggested(choice, person)
         self.choices.append(choice)
         failed = False
         if rules >= 1:
@@ -371,28 +327,26 @@ class Rules(Accordion):
                 failed = True
                 
         if failed: #fail a rule = no money gain
-            multiplier = 0
+            net_change = 0
             self.parent.parent.parent.strikes += 1
         else:
             print 'You passed all rules.'
             
-        net_money = multiplier * c.MONEY_C
-        return net_money
+        return net_change
     
     def check_one(self, ch, p):
         #Do not use the same punish more than twice in a row
         if len(self.choices) > 2:
             if ch == self.choices[-2] and ch == self.choices[-3]:
-                self.choices = []
                 return False
         return True
     
     def check_two(self, ch, p):
-        #People > 40 years of age are to be vaporized
-        if p.age > 40:
-            if ch != 'vap':
-                return False
-        return True
+        #Reeducation is not to be wasted on proletariat
+        if p.tier == 'proletariat' and ch == 'ree':
+            return False
+        return True    
+
 
     def check_three(self, ch, p):
         #Inner Party members < 35 years cannot be sent to joycamp
@@ -408,10 +362,12 @@ class Rules(Accordion):
         return True
     
     def check_five(self, ch, p):
-        #Reeducation is not to be wasted on proletariat
-        if p.tier == 'proletariat' and ch == 'ree':
-            return False
+        #People > 40 years of age are to be vaporized
+        if p.age > 40:
+            if ch != 'vap':
+                return False
         return True
+    
 class Recs(Accordion):
     crime_tab = c.CRIMES.keys()
     
@@ -420,9 +376,9 @@ class Recs(Accordion):
         for c in self.crime_tab:
             self.add_widget(Page(c))  
             
-        l = '\n'.join(['Proletariat - The working class; "Proles and animals are free"',
-                       'Outer Party - Middle class members of society.',
-                       'Inner Party - Individuals dedicated to Ingsoc and The Party.'])
+        l = '\n'.join(['Proletariat - The working poor, non-believers of IngSoc.',
+                       'Outer Party - Middle class members of The Party',
+                       'Inner Party - Individuals having demonstrated dedication to Ingsoc and The Party.'])
         a = AccordionItem(title='Classes')
         class_list = BoxLayout(orientation='vertical')
         class_list.add_widget(Label(text=l))
@@ -431,101 +387,84 @@ class Recs(Accordion):
 
         lab = Label(text=l)
 Builder.load_string('''<Ending>:
-    Label:
-        text: root.my_text
+    AnchorLayout:
+        anchor_x: 'center'
+        anchor_y: 'center'
+        BoxLayout:
+            orientation: 'vertical'
+            size_hint: (0.4, 0.60)
+            Image:
+                source: 'data/images/ingsoc.jpg'
+            Label:
+                markup: True
+                text: root.slogan
+            Label:
+            Label:
+                markup: True
+                text: root.my_text
+                font_size: '32sp'
+                
 ''')
 
 class Ending(Screen):
-    my_text = StringProperty('Game Over') 
+    my_text = StringProperty('Game Over')
+    slogan = StringProperty('[b]          WAR IS PEACE    \n    FREEDOM IS SLAVERY \nIGNORANCE IS STRENGTH[/b]')
  
 Builder.load_string('''<Status>:
     name: 'status'
-    on_pre_enter: root.hunger([wifey, kid, you])
     BoxLayout:
         orientation: 'vertical'
         Label:
             text: 'Status'
         Label:
-            text: 'Money: ' + str(root.money)
-        BoxLayout:
-            orientation: 'horizontal'
-            Button:
-                text: 'Feed'
-                on_press: root.feed(wifey)
-            Label:
-                text: 'Wife'
-            ProgressBar:
-                id: wifey
-                max: 100
-                value: 75
-        BoxLayout:
-            orientation: 'horizontal'
-            Button:
-                text: 'Feed'
-                on_press: root.feed(kid)            
-            Label:
-                text: 'Child'
-            ProgressBar:
-                id: kid
-                max: 100
-                value: 75
-        BoxLayout:
-            orientation: 'horizontal'
-            Button:
-                text: 'Feed'
-                on_press: root.feed(you)
-            Label:
-                text: 'You'
-            ProgressBar:
-                id: you
-                max: 100
-                value: 75
+            text: root.grade
+            font_size: '32sp'
         Button:
             text: 'Done'
-            on_press: root.move_on(you, kid, wifey)
+            on_press: root.move_on()
 ''')        
 
 class Status(Screen):
-    money = NumericProperty(50)
-    starving = False
-    
+    grade = StringProperty('')
+    c_grades = 0
+        
     def get_day(self):
         d = 'Day '+str(self.manager.get_screen('desk').day)
         return d
+
+    def get_stats(self, correct, total):
+        self.grade = self.number_to_letter((correct/total)*100.0) + ' Grade'
+   
+    def number_to_letter(self, grade):
+        if grade >= 90.0:
+            letter = 'A'
+        elif grade >= 80.0:
+            letter = 'B'
+        elif grade >= 70.0:
+            letter = 'C'
+        elif grade >= 60.0:
+            letter = 'D'
+        elif grade < 60.0:
+            letter = 'F'
+        if grade < 80.0:
+            self.c_grades += 1
+        return letter
     
-    def hunger(self, people):
-        self.people = people
-        for person in people:
-            person.value -= 50
-                
-    def move_on(self, *args):
-        for person in args:
-            if person.value <= 0:
-                self.starving = True
+    def move_on(self):
         if not self.ending():
             change_to_transition(self.manager, text=self.get_day())
-
         else:
             self.manager.get_screen('desk').playing = False
-
-    def feed(self, p):
-        if self.money >= c.FOOD_COST and p.value <= 90:
-            self.money -= c.FOOD_COST
-            p.value += c.FOOD_EFFECT
-        else:
-            print 'Not enough money'
-     
-    def reset_stats(self):
-        self.money = 50
-        for person in self.people:
-            person.value = 75
+            self.c_grades = 0
         
     def ending(self):
-        if self.starving:
-            change_to_transition(self.manager, text='You & your family starved', type=Ending, n='end')
+        if self.c_grades >= 3:
+            end = random.choice(['[i]illness.[/i]', '[i]starvation.[/i]'])
+            end_text = ' '.join(["[i]Your family has died from", end, '\nYou have failed to progress The Party.[/i]'])
+            change_to_transition(self.manager, text=end_text, type=Ending, n='end')
             return True
         elif int(self.get_day()[4]) >= 6:
-            change_to_transition(self.manager, text='Congratulations.\nYour reeducation is complete.\nWe\'ll see you Monday comrade.', type=Ending, n='end')
+            change_to_transition(self.manager, text='[i]Congratulations.\nYour reeducation is complete.\nWelcome to ThinkPol comrade.[/i]', type=Ending, n='end')
             return True
         return False
         

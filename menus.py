@@ -3,8 +3,7 @@ __author__ = 'Synergy'
 from kivy.lang import Builder
 from kivy.uix.screenmanager import Screen
 from transition import change_to_transition
-from kivy.uix.popup import Popup
-from kivy.uix.label import Label
+import data.gameData as c
 
 Builder.load_string('''<Main>:
     name: 'main'
@@ -13,8 +12,8 @@ Builder.load_string('''<Main>:
         anchor_y: 'top'
         Button:
             size_hint: (0.08229167, 0.14351852)
-            background_normal: 'data/images/exit.png'
-            on_release: app.stop()
+            background_normal: 'data/images/sound_on.png'
+            on_release: root.toggle_sound(self)
     AnchorLayout:
         anchor_x: 'center'
         anchor_y: 'center'
@@ -33,35 +32,77 @@ Builder.load_string('''<Main>:
                     on_release: root.new_game()
                 Button:
                     background_normal: 'data/images/l2p.png'
-                    on_release: root.welcome_pop()
+                    on_release: root.manager.current = 'howto'
             BoxLayout:
                 Button:
-                    background_normal: 'data/images/config.png'
-                    on_release: app.open_settings()
+                    background_normal: 'data/images/exit.png'
+                    on_release: app.stop()
                 Button:
                     background_normal: 'data/images/thanx.png'
-                    on_release: root.credit_pop()
+                    on_release: root.manager.current = 'thanks'
 ''')
 
 
 class Main(Screen):
+    sound = True
     
+    def on_enter(self):
+        if self.sound:
+            c.bg_music.play()
+        
     def new_game(self):
         #Fade to a transition screen
         change_to_transition(self.manager, text='Day 1')
-        
-    def welcome_pop(self):
-        p = Popup(title='Greetings',
-                  content=Label(text = '\n'.join(['You are responsible for processing crimethinkers.',
-                        'Drop their arrest card into the appropriate slot.', ' ',
-                        'You will be given a copy of the Law Enforcement Guide.',
-                        'Violating Basic Truths multiple times will result in termination.',
-                        'Crime pages list appropriate punishments, these do no supercede Basic Truths.'])),
-                  size_hint=(0.4, 0.6))
-        p.open()
     
-    def credit_pop(self):
-        p = Popup(title='Credits&Thanks',
-                  content=Label(text = '\n'.join(['This is a placeholder',''])),
-                  size_hint=(0.4, 0.6))
-        p.open()
+    def toggle_sound(self, widget):
+        self.sound = not self.sound
+        if self.sound:
+            widget.background_normal = 'data/images/sound_on.png'
+            c.bg_music.play()
+        else:
+            widget.background_normal = 'data/images/sound_off.png'
+            c.bg_music.stop()
+        
+Builder.load_string('''<HowTo>:
+    name: 'howto'
+    AnchorLayout:
+        anchor_x: 'center'
+        anchor_y: 'center'
+        Image:
+            source: 'data/images/howto.png'
+            size_hint: (0.666666667, 0.666666667)
+    AnchorLayout:
+        anchor_x: 'right'
+        anchor_y: 'top'
+        Button:
+            size_hint: (0.0411, 0.0717)
+            background_normal: 'data/images/back.png'
+            on_release: root.manager.current = 'main'
+''')
+
+class HowTo(Screen):
+    pass
+
+Builder.load_string('''<Thanks>:
+    name: 'thanks'
+    AnchorLayout:
+        anchor_x: 'center'
+        anchor_y: 'center'
+        Label:
+            size_hint: (0.15, 0.20)
+            text: root.text
+    AnchorLayout:
+        anchor_x: 'right'
+        anchor_y: 'top'
+        Button:
+            size_hint: (0.0411, 0.0717)
+            background_normal: 'data/images/back.png'
+            on_release: root.manager.current = 'main'
+''')
+    
+class Thanks(Screen):
+    text = '\n'.join(['Special Thanks', 'George Orwell for the novel 1984',
+                                'Lucas Pope (@dukope) for his game Papers, Please', ' ',
+                                'Game Design & Programming: Synergy',
+                                'Music: Roald Strauss',
+                                'Creative Commons Attribution-ShareAlike 4.0 International License.'])

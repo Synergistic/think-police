@@ -1,4 +1,4 @@
-from kivy.uix.screenmanager import Screen, SlideTransition, SwapTransition, FadeTransition, WipeTransition, FallOutTransition, RiseInTransition
+from kivy.uix.screenmanager import Screen, FadeTransition
 from kivy.lang import Builder
 from kivy.clock import Clock
 from functools import partial
@@ -33,7 +33,7 @@ def change_to_transition(sm, text='Day 1', n='newday', type=DayChange):
     if sm.current == 'newday':        
         Clock.schedule_once(partial(next_phase, sm, start_screen), 1)
     elif sm.current == 'end':
-        Clock.schedule_once(partial(restart, sm), 5)
+        Clock.schedule_once(partial(restart, sm), 8)
     
 def next_phase(sm, start, dt):
 
