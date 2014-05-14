@@ -1,5 +1,6 @@
 think-police
 ============
+Setup: Requires Kivy 1.8.0 and Python 2.7, entry at main.py
 
 Heavily inspired by the game Papers, Please (http://papersplea.se/) and the novel 1984 ThinkPolice is a game of moral decisions. You operate as an agent of the Thought Police to exterminate ThoughtCriminals and enemies of The Party. Currently tested and supported on Linux & Windows. Untested on OS X, Android, iOS.
 
