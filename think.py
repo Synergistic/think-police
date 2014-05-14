@@ -211,18 +211,14 @@ class Card(Widget):
     crime_text = StringProperty('')
     decided = False
     
-    def __init__(self, **kwargs):
-        super(Card, self).__init__(**kwargs)
-        self.new_person(Person())
-    
     def new_person(self, new):
         self.name_text = new.name
         self.tier_text = new.tier.capitalize()
         self.age_text = ' '.join(['Aged', str(new.age)])
         self.crime_text = new.crime
 
-        self.center_y = 368
-        self.x = 900
+        self.center_y = self.parent.parent.parent.height / 3.0
+        self.center_x = self.parent.parent.parent.width / 2.0
         self.decided = False
     
 
@@ -238,7 +234,6 @@ class Card(Widget):
         to the main game object and animates the card'''
         width = self.parent.parent.parent.width
         height = self.parent.parent.parent.height * 0.06
-        x_off = 0.1
         points = [(width * 0.24479167 , height), (0.41458333 * width, height),
                   (0.5859375 * width, height), (0.75859375 * width, height)]
         options = ['vaporize', 'reeducate', 'room', 'joycamp']
@@ -295,10 +290,8 @@ class Rules(Accordion):
         answer = c.CRIMES[p.crime][1][:3].lower()
         if answer == ch:
             result = 1.0
-            print 'Same as suggested'
         else:
             result = 0.5
-            print 'Differs from suggested'
         return result
     
     def check_rules(self, rules, choice, person):
@@ -307,31 +300,23 @@ class Rules(Accordion):
         failed = False
         if rules >= 1:
             if not self.check_one(choice, person):
-                print "You failed rule 1"
                 failed = True
         if rules >= 2:
             if not self.check_two(choice, person):
-                print "You failed rule 2"
                 failed = True
         if rules >= 3:
             if not self.check_three(choice, person):
-                print "You failed rule 3"
                 failed = True
         if rules >= 4:
             if not self.check_four(choice, person):
-                print "You failed rule 4"
                 failed = True
         if rules >= 5:
             if not self.check_five(choice, person):
-                print "You failed rule 5"
                 failed = True
                 
         if failed: #fail a rule = no money gain
             net_change = 0
             self.parent.parent.parent.strikes += 1
-        else:
-            print 'You passed all rules.'
-            
         return net_change
     
     def check_one(self, ch, p):
