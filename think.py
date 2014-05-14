@@ -466,7 +466,7 @@ class Status(Screen):
             change_to_transition(self.manager, text=end_text, type=Ending, n='end')
             return True
         elif int(self.get_day()[4]) >= 6:
-            change_to_transition(self.manager, text='[i]Congratulations.\nYour reeducation is complete.\nWelcome to ThinkPol comrade.[/i]', type=Ending, n='end')
+            change_to_transition(self.manager, text='[i]    Congratulations.\nYour reeducation is complete.\nWelcome to ThinkPol comrade.[/i]', type=Ending, n='end')
             return True
         return False
         

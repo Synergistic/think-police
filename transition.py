@@ -7,9 +7,8 @@ from kivy.properties import StringProperty
 Builder.load_string('''<DayChange>:
     Label:
         text: root.my_text
+        font_size: '32sp'
 ''')
-
-
 
 class DayChange(Screen):
     my_text = StringProperty('')
@@ -31,7 +30,7 @@ def change_to_transition(sm, text='Day 1', n='newday', type=DayChange):
     
     sm.transition = FadeTransition()
     if sm.current == 'newday':        
-        Clock.schedule_once(partial(next_phase, sm, start_screen), 1)
+        Clock.schedule_once(partial(next_phase, sm, start_screen), 2)
     elif sm.current == 'end':
         Clock.schedule_once(partial(restart, sm), 8)
     
@@ -43,8 +42,7 @@ def next_phase(sm, start, dt):
         sm.current = 'status'
     elif start == 'status':
         sm.current = 'desk'
-    
-
+        
 def restart(sm, dt):
     sm.current = 'main'
     
