@@ -70,7 +70,7 @@ Builder.load_string('''<HowTo>:
         anchor_y: 'center'
         Image:
             source: 'data/images/howto.png'
-            size_hint: (0.666666667, 0.666666667)
+            size_hint: (0.666666667, 0.666666667)         
     AnchorLayout:
         anchor_x: 'right'
         anchor_y: 'top'
@@ -78,10 +78,19 @@ Builder.load_string('''<HowTo>:
             size_hint: (0.0411, 0.0717)
             background_normal: 'data/images/back.png'
             on_release: root.manager.current = 'main'
+    AnchorLayout:
+        anchor_x: 'center'
+        anchor_y: 'bottom'
+        BoxLayout:
+            size_hint: (1, .25)
+            orientation: 'vertical'
+            Label:
+                text: root.instruction_text
 ''')
 
 class HowTo(Screen):
-    pass
+    instruction_text = '\n'.join(["You will be graded based on your adherence to the Basic Truths and Big Brother's Guide.", 
+                                  "Repeat poor performance will result in a pay decrease."])
 
 Builder.load_string('''<Thanks>:
     name: 'thanks'
@@ -97,12 +106,12 @@ Builder.load_string('''<Thanks>:
         Button:
             size_hint: (0.0411, 0.0717)
             background_normal: 'data/images/back.png'
-            on_release: root.manager.current = 'main'
+            on_release: root.manager.current = 'main'          
 ''')
     
 class Thanks(Screen):
     text = '\n'.join(['Special Thanks', 'George Orwell for the novel 1984',
                                 'Lucas Pope (@dukope) for his game Papers, Please', ' ',
-                                'Game Design & Programming: Synergy',
+                                'Game Design & Programming: Synergy (@synergistik)',
                                 'Music: Roald Strauss',
                                 'Creative Commons Attribution-ShareAlike 4.0 International License.'])

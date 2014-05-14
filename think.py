@@ -4,7 +4,7 @@ from kivy.lang import Builder
 from kivy.uix.screenmanager import Screen
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.accordion import Accordion, AccordionItem
-from kivy.properties import ObjectProperty, StringProperty
+from kivy.properties import ObjectProperty, StringProperty, NumericProperty
 from kivy.uix.label import Label
 from kivy.uix.widget import Widget
 from kivy.clock import Clock
@@ -412,53 +412,70 @@ class Ending(Screen):
  
 Builder.load_string('''<Status>:
     name: 'status'
-    BoxLayout:
-        orientation: 'vertical'
-        Label:
-            text: 'Status'
-        Label:
-            text: root.grade
-            font_size: '32sp'
-        Button:
-            text: 'Done'
-            on_press: root.move_on()
+    AnchorLayout:
+        anchor_x: 'center'
+        anchor_y: 'center'
+        BoxLayout:
+            orientation: 'vertical'
+            size_hint: (.15312, 0.8)
+            Label:
+                markup: True
+                text: root.title
+                font_size: '48sp'
+            ProgressBar:
+                value: root.grade_value
+                max: 100
+            Label:
+                markup: True
+                font_size: '22sp'
+                text: root.grade_letter
+            Label:
+            Label:
+            Button:
+                background_normal: 'data/images/okay.png'
+                on_release: root.move_on()
 ''')        
 
 class Status(Screen):
-    grade = StringProperty('')
-    c_grades = 0
+    grade_letter = StringProperty('')
+    title = StringProperty('')
+    grade_value = NumericProperty(0)
+    d_grades = 0
         
     def get_day(self):
         d = 'Day '+str(self.manager.get_screen('desk').day)
         return d
 
     def get_stats(self, correct, total):
-        self.grade = self.number_to_letter((correct/total)*100.0) + ' Grade'
+        finished_day = int(self.get_day()[4]) -1
+        self.title = '[b]Day ' + str(finished_day) + ' Assessment[/b]'
+        self.grade_value = (correct/total)*100.0
+        self.grade_letter = self.number_to_letter(self.grade_value)
    
     def number_to_letter(self, grade):
         if grade >= 90.0:
-            letter = 'A'
+            letter = '[i]Doubleplusgood[/i]'
         elif grade >= 80.0:
-            letter = 'B'
+            letter = '[i]Plusgood[/i]'
         elif grade >= 70.0:
-            letter = 'C'
+            letter = '[i]Good[/i]'
         elif grade >= 60.0:
-            letter = 'D'
+            letter = '[i]Ungood[/i]'
         elif grade < 60.0:
-            letter = 'F'
-        if grade < 80.0:
-            self.c_grades += 1
-        return letter
+            letter = '[i]Doubleplusungood[/i]'
+        if grade < 70.0:
+            self.d_grades += 1
+        return 'Rating: ' + letter
     
     def move_on(self):
         if not self.ending():
             change_to_transition(self.manager, text=self.get_day())
         else:
             self.manager.get_screen('desk').playing = False
-            self.c_grades = 0
+            self.d_grades = 0
         
     def ending(self):
-        if self.c_grades >= 3:
+        if self.d_grades >= 2:
             end = random.choice(['[i]illness.[/i]', '[i]starvation.[/i]'])
             end_text = ' '.join(["[i]Your family has died from", end, '\nYou have failed to progress The Party.[/i]'])
             change_to_transition(self.manager, text=end_text, type=Ending, n='end')
